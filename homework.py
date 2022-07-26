@@ -1,6 +1,7 @@
 import logging
 import os
 import requests
+import sys
 import time
 
 from telegram import Bot
@@ -31,11 +32,11 @@ logging.basicConfig(
 
 def send_message(bot, message):
     """отправляет сообщение в Telegram чат."""
-    try:
-        bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.info(f'сообщение удачно отправлено: {message}')
-    except Exception:
-        logging.error('сбой при отправке сообщения в Telegram ')
+    bot.send_message(TELEGRAM_CHAT_ID, message)
+    logging.info('начали отправку сообщения в Telegram')
+    if not bot.send_message(TELEGRAM_CHAT_ID, message):
+        raise Exception('сбой при отправке сообщения в Telegram ')
+    logging.info(f'сообщение удачно отправлено: {message}')
 
 
 def get_api_answer(current_timestamp):
@@ -45,19 +46,16 @@ def get_api_answer(current_timestamp):
     response = requests.get(ENDPOINT, params, headers=HEADERS,)
     if response.status_code != HTTPStatus.OK:
         raise Exception(logging.error('ошибка: API недоступен'))
+    logging.info('начали запрос к API')
     return response.json()
 
 
 def check_response(response):
     """проверяет ответ API на корректность."""
     if not isinstance(response, dict):
-        raise TypeError(
-            logging.error('response возвращает неверный тип данных')
-        )
+        raise TypeError(('response возвращает неверный тип данных'))
     if 'homeworks' not in response.keys():
-        raise KeyError(
-            logging.error('ответ от API не содержит ключа homeworks')
-        )
+        raise KeyError(('ответ от API не содержит ключа homeworks'))
     if not isinstance(response.get('homeworks'), list):
         raise TypeError('домашки приходят не в виде списка в ответ от API')
     return response.get('homeworks')
@@ -68,28 +66,19 @@ def parse_status(homework):
 
     статус этой работы.
     """
-    homework_name = homework['homework_name']
-    homework_status = homework['status']
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
     if homework_status not in HOMEWORK_STATUSES:
-        raise KeyError(
-            logging.error('неправильный статус домашней работы')
-        )
+        raise KeyError(('неправильный статус домашней работы'))
     if 'homework_name' not in homework.keys():
-        raise KeyError(
-            logging.error('отсутствует ключ homework_name в ответе от API')
-        )
+        raise KeyError(('отсутствует ключ homework_name в ответе от API'))
     verdict = HOMEWORK_STATUSES.get(homework_status)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
 def check_tokens():
     """проверяет доступность переменных окружения."""
-    *variables, = PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
-    if all(variables):
-        return True
-    else:
-        logging.critical('отсутствие обязательных переменных окружения')
-        return False
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def main():
@@ -99,20 +88,18 @@ def main():
     while True:
         try:
             if not check_tokens():
-                break
+                sys.exit('отсутствие обязательных переменных окружения')
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
             get_api_answer(current_timestamp)
             if homework:
                 send_message(bot, parse_status(homework[0]))
                 current_timestamp = response['current_date']
-            time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
+        finally:
             time.sleep(RETRY_TIME)
-        else:
-            pass
 
 
 if __name__ == '__main__':
