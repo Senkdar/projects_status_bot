@@ -11,7 +11,7 @@ load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('YP_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TG_TOKEN')
-TELEGRAM_CHAT_ID = ''
+TELEGRAM_CHAT_ID = '358030006'
 
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -64,8 +64,9 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """извлекает из информации о конкретной домашней работе
-        статус этой работы.
+    """извлекает из информации о конкретной домашней работе.
+    
+    статус этой работы.
     """
     homework_name = homework['homework_name']
     homework_status = homework['status']
@@ -99,7 +100,7 @@ def main():
         try:
             if not check_tokens():
                 break
-            response = get_api_answer(1657443497)
+            response = get_api_answer(current_timestamp)
             homework = check_response(response)
             get_api_answer(current_timestamp)
             if homework:
