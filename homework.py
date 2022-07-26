@@ -32,11 +32,16 @@ logging.basicConfig(
 
 def send_message(bot, message):
     """отправляет сообщение в Telegram чат."""
-    bot.send_message(TELEGRAM_CHAT_ID, message)
-    logging.info('начали отправку сообщения в Telegram')
-    if not bot.send_message(TELEGRAM_CHAT_ID, message):
-        raise Exception('сбой при отправке сообщения в Telegram ')
-    logging.info(f'сообщение удачно отправлено: {message}')
+    try:
+        logging.info('начали отправку сообщения в Telegram')
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+    except Exception as error:
+        raise Exception(f'сбой при отправке сообщения в Telegram: {error}')
+    else:
+        logging.info(f'сообщение удачно отправлено: {message}')
+# даже и не знал, что можно использовать try/except вместе с raise.
+# двойные скобки по невнимательности забыл исправить...
+# P.S. скорость проверки домашки приятно удивляет)
 
 
 def get_api_answer(current_timestamp):
@@ -53,9 +58,9 @@ def get_api_answer(current_timestamp):
 def check_response(response):
     """проверяет ответ API на корректность."""
     if not isinstance(response, dict):
-        raise TypeError(('response возвращает неверный тип данных'))
+        raise TypeError('response возвращает неверный тип данных')
     if 'homeworks' not in response.keys():
-        raise KeyError(('ответ от API не содержит ключа homeworks'))
+        raise KeyError('ответ от API не содержит ключа homeworks')
     if not isinstance(response.get('homeworks'), list):
         raise TypeError('домашки приходят не в виде списка в ответ от API')
     return response.get('homeworks')
@@ -69,9 +74,9 @@ def parse_status(homework):
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
     if homework_status not in HOMEWORK_STATUSES:
-        raise KeyError(('неправильный статус домашней работы'))
+        raise KeyError('неправильный статус домашней работы')
     if 'homework_name' not in homework.keys():
-        raise KeyError(('отсутствует ключ homework_name в ответе от API'))
+        raise KeyError('отсутствует ключ homework_name в ответе от API')
     verdict = HOMEWORK_STATUSES.get(homework_status)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
