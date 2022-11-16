@@ -39,9 +39,6 @@ def send_message(bot, message):
         raise Exception(f'сбой при отправке сообщения в Telegram: {error}')
     else:
         logging.info(f'сообщение удачно отправлено: {message}')
-# даже и не знал, что можно использовать try/except вместе с raise.
-# двойные скобки по невнимательности забыл исправить...
-# P.S. скорость проверки домашки приятно удивляет)
 
 
 def get_api_answer(current_timestamp):
